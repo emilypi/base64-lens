@@ -36,10 +36,10 @@ library
   exposed-modules:     Data.ByteString.Base64.Lens
                      , Data.Text.Encoding.Base64.Lens
 
-  build-depends:       base       >=4.10    && <5
-                     , base64     >=0.2.0.0
-                     , bytestring >=0.10    && <0.11
-                     , lens       >=4.0     && <4.19
+  build-depends:       base       >=4.10 && <5
+                     , base64     >=0.2  && <0.3
+                     , bytestring >=0.10 && <0.11
+                     , lens       >=4.0  && <4.19
                      , text
 
   hs-source-dirs:      src
