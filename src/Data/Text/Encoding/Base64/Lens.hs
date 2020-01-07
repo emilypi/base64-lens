@@ -9,7 +9,7 @@
 -- Stability	: Experimental
 -- Portability	: non-portable
 --
--- This module contains 'Control.Lens.Type.Prism's Base64-encoding and
+-- This module contains 'Prism's Base64-encoding and
 -- decoding 'Text' values.
 --
 module Data.Text.Encoding.Base64.Lens
@@ -25,8 +25,6 @@ module Data.Text.Encoding.Base64.Lens
 , pattern Base64UrlUnpadded
 ) where
 
-
-import Control.Lens
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding.Base64 as B64T
@@ -44,7 +42,7 @@ import qualified Data.Text.Encoding.Base64.URL as B64TU
 -- -------------------------------------------------------------------------- --
 -- Optics
 
--- | A 'Control.Lens.Type.Prism' into the Base64 encoding of a 'Text' value.
+-- | A 'Prism' into the Base64 encoding of a 'Text' value.
 --
 -- >>> _Base64 # "Sun"
 -- "U3Vu"
@@ -58,7 +56,7 @@ _Base64 = prism' B64T.encodeBase64 $ \s -> case B64T.decodeBase64 s of
     Right a -> Just a
 {-# INLINE _Base64 #-}
 
--- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'Text' value.
+-- | A 'Prism' into the Base64-url encoding of a 'Text' value.
 --
 -- >>> _Base64Url # "Sun"
 -- "U3Vu"
@@ -72,7 +70,7 @@ _Base64Url = prism' B64TU.encodeBase64 $ \s -> case B64TU.decodeBase64 s of
     Right a -> Just a
 {-# INLINE _Base64Url #-}
 
--- | A 'Control.Lens.Type.Prism' into the unpadded Base64 encoding of a
+-- | A 'Prism' into the unpadded Base64 encoding of a
 -- 'Text' value.
 --
 -- Please note that unpadded variants should only be used
@@ -91,7 +89,7 @@ _Base64Unpadded = prism' B64T.encodeBase64Unpadded $ \s -> case B64T.decodeBase6
     Right a -> Just a
 {-# INLINE _Base64Unpadded #-}
 
--- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'Text' value.
+-- | A 'Prism' into the Base64-url encoding of a 'Text' value.
 --
 -- Please note that unpadded variants should only be used
 -- when assumptions about the data can be made. In particular, if the length of
@@ -112,25 +110,25 @@ _Base64UrlUnpadded = prism' B64TU.encodeBase64Unpadded $ \s -> case B64TU.decode
 -- -------------------------------------------------------------------------- --
 -- Patterns
 
--- | Bidirectional pattern synonym for base64-encoded 'Text' values.
+-- | Unidirectional pattern synonym for base64-encoded 'Text' values.
 --
 pattern Base64 :: Text -> Text
 pattern Base64 a <- (preview _Base64 -> Just a)
   where Base64 a = _Base64 # a
 
--- | Bidirectional pattern synonym for base64url-encoded 'Text' values.
+-- | Unidirectional pattern synonym for base64url-encoded 'Text' values.
 --
 pattern Base64Url :: Text -> Text
 pattern Base64Url a <- (preview _Base64Url -> Just a)
   where Base64Url a = _Base64Url # a
 
--- | Bidirectional pattern synonym for unpadded base64-encoded 'Text' values.
+-- | Unidirectional pattern synonym for unpadded base64-encoded 'Text' values.
 --
 pattern Base64Unpadded :: Text -> Text
 pattern Base64Unpadded a <- (preview _Base64Unpadded -> Just a)
   where Base64Unpadded a = _Base64Unpadded # a
 
--- | Bidirectional pattern synonym for unpadded base64url-encoded 'Text' values.
+-- | Unidirectional pattern synonym for unpadded base64url-encoded 'Text' values.
 --
 pattern Base64UrlUnpadded :: Text -> Text
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a)
