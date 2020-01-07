@@ -9,7 +9,7 @@
 -- Stability	: Experimental
 -- Portability	: non-portable
 --
--- This module contains 'Control.Lens.Type.Prism's for Base64-encoding and
+-- This module contains 'Prism''s for Base64-encoding and
 -- decoding 'ByteString' values.
 --
 module Data.ByteString.Base64.Lens
@@ -18,11 +18,15 @@ module Data.ByteString.Base64.Lens
 , _Base64Url
 , _Base64Unpadded
 , _Base64UrlUnpadded
+, _Base64Lenient
+, _Base64UrlLenient
   -- * Patterns
 , pattern Base64
 , pattern Base64Url
 , pattern Base64Unpadded
 , pattern Base64UrlUnpadded
+, pattern Base64Lenient
+, pattern Base64UrlLenient
 ) where
 
 
@@ -45,7 +49,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 -- -------------------------------------------------------------------------- --
 -- Optics
 
--- | A 'Control.Lens.Type.Prism' into the Base64 encoding of a 'ByteString' value
+-- | A 'Prism'' into the Base64 encoding of a 'ByteString' value
 --
 -- >>> _Base64 # "Sun"
 -- "U3Vu"
@@ -54,12 +58,12 @@ import qualified Data.ByteString.Base64.URL as B64U
 -- Just "Sun"
 --
 _Base64 :: Prism' ByteString ByteString
-_Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
+_Base64 = prism' B64.encodeBase64' $ \s -> case B64.decodeBase64 s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64 #-}
 
--- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'ByteString' value
+-- | A 'Prism'' into the Base64url encoding of a 'ByteString' value
 --
 -- >>> _Base64Url # "Sun"
 -- "U3Vu"
@@ -68,12 +72,12 @@ _Base64 = prism' B64.encodeBase64 $ \s -> case B64.decodeBase64 s of
 -- Just "<<???>>"
 --
 _Base64Url :: Prism' ByteString ByteString
-_Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
+_Base64Url = prism' B64U.encodeBase64' $ \s -> case B64U.decodeBase64 s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64Url #-}
 
--- | A 'Control.Lens.Type.Prism' into the unpadded Base64 encoding of a
+-- | A 'Prism'' into the unpadded Base64 encoding of a
 -- 'ByteString' value
 --
 -- Please note that unpadded variants should only be used
@@ -87,12 +91,12 @@ _Base64Url = prism' B64U.encodeBase64 $ \s -> case B64U.decodeBase64 s of
 -- Just "Sun"
 --
 _Base64Unpadded :: Prism' ByteString ByteString
-_Base64Unpadded = prism' B64.encodeBase64Unpadded $ \s -> case B64.decodeBase64Unpadded s of
+_Base64Unpadded = prism' B64.encodeBase64Unpadded' $ \s -> case B64.decodeBase64Unpadded s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64Unpadded #-}
 
--- | A 'Control.Lens.Type.Prism' into the Base64-url encoding of a 'ByteString' value
+-- | A 'Prism'' into the Base64url encoding of a 'ByteString' value
 --
 -- Please note that unpadded variants should only be used
 -- when assumptions about the data can be made. In particular, if the length of
@@ -105,10 +109,37 @@ _Base64Unpadded = prism' B64.encodeBase64Unpadded $ \s -> case B64.decodeBase64U
 -- Just "<<??>>"
 --
 _Base64UrlUnpadded :: Prism' ByteString ByteString
-_Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded $ \s -> case B64U.decodeBase64Unpadded s of
+_Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeBase64Unpadded s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
+
+-- | An 'Iso'' into the Base64u encoding of a 'ByteString' value
+--
+--
+-- _Note:_ This is not a lawful 'Iso'.
+--
+-- >>> _Base64UrlUnpadded # "<<??>>"
+-- "PDw_Pz4-"
+--
+-- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
+-- Just "<<??>>"
+--
+_Base64Lenient :: Iso' ByteString ByteString
+_Base64Lenient = iso B64.encodeBase64' B64.decodeBase64Lenient
+
+-- | An 'Iso'' into the Base64url encoding of a 'ByteString' value
+--
+-- _Note:_ This is not a lawful 'Iso'.
+--
+-- >>> _Base64UrlUnpadded # "<<??>>"
+-- "PDw_Pz4-"
+--
+-- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
+-- Just "<<??>>"
+--
+_Base64UrlLenient :: Iso' ByteString ByteString
+_Base64UrlLenient = iso B64U.encodeBase64' B64U.decodeBase64Lenient
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
@@ -136,3 +167,17 @@ pattern Base64Unpadded a <- (preview _Base64Unpadded -> Just a) where
 pattern Base64UrlUnpadded :: ByteString -> ByteString
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
     Base64UrlUnpadded a = _Base64UrlUnpadded # a
+
+-- | Bidirectional pattern synonym for leniently Base64-encoded 'ByteString' values
+--
+pattern Base64Lenient :: ByteString -> ByteString
+pattern Base64Lenient a <- (view (from _Base64Lenient) -> a) where
+    Base64Lenient a = view _Base64Lenient a
+{-# COMPLETE Base64Lenient #-}
+
+-- | Bidirectional pattern synonym for leniently Base64-encoded 'ByteString' values
+--
+pattern Base64UrlLenient :: ByteString -> ByteString
+pattern Base64UrlLenient a <- (view (from _Base64UrlLenient) -> a) where
+    Base64UrlLenient a = view _Base64UrlLenient a
+{-# COMPLETE Base64UrlLenient #-}

@@ -18,13 +18,19 @@ module Data.Text.Encoding.Base64.Lens
 , _Base64Url
 , _Base64Unpadded
 , _Base64UrlUnpadded
+, _Base64Lenient
+, _Base64UrlLenient
   -- * Patterns
 , pattern Base64
 , pattern Base64Url
 , pattern Base64Unpadded
 , pattern Base64UrlUnpadded
+, pattern Base64Lenient
+, pattern Base64UrlLenient
+
 ) where
 
+import Control.Lens
 
 import Data.Text (Text)
 import qualified Data.Text.Encoding.Base64 as B64T
@@ -107,6 +113,33 @@ _Base64UrlUnpadded = prism' B64TU.encodeBase64Unpadded $ \s -> case B64TU.decode
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
 
+-- | An 'Iso'' into the Base64u encoding of a 'Text' value
+--
+--
+-- _Note:_ This is not a lawful 'Iso'.
+--
+-- >>> _Base64UrlUnpadded # "<<??>>"
+-- "PDw_Pz4-"
+--
+-- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
+-- Just "<<??>>"
+--
+_Base64Lenient :: Iso' Text Text
+_Base64Lenient = iso B64T.encodeBase64 B64T.decodeBase64Lenient
+
+-- | An 'Iso'' into the Base64url encoding of a 'Text' value
+--
+-- _Note:_ This is not a lawful 'Iso'.
+--
+-- >>> _Base64UrlUnpadded # "<<??>>"
+-- "PDw_Pz4-"
+--
+-- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
+-- Just "<<??>>"
+--
+_Base64UrlLenient :: Iso' Text Text
+_Base64UrlLenient = iso B64TU.encodeBase64 B64TU.decodeBase64Lenient
+
 -- -------------------------------------------------------------------------- --
 -- Patterns
 
@@ -133,3 +166,17 @@ pattern Base64Unpadded a <- (preview _Base64Unpadded -> Just a)
 pattern Base64UrlUnpadded :: Text -> Text
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a)
   where Base64UrlUnpadded a = _Base64UrlUnpadded # a
+
+-- | Bidirectional pattern synonym for leniently Base64-encoded 'Text' values
+--
+pattern Base64Lenient :: Text -> Text
+pattern Base64Lenient a <- (view (from _Base64Lenient) -> a) where
+    Base64Lenient a = view _Base64Lenient a
+{-# COMPLETE Base64Lenient #-}
+
+-- | Bidirectional pattern synonym for leniently Base64-encoded 'Text' values
+--
+pattern Base64UrlLenient :: Text -> Text
+pattern Base64UrlLenient a <- (view (from _Base64UrlLenient) -> a) where
+    Base64UrlLenient a = view _Base64UrlLenient a
+{-# COMPLETE Base64UrlLenient #-}
