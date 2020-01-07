@@ -21,6 +21,16 @@ pattern Base64 :: Text -> Text
 pattern Base64Url :: Text -> Text
 pattern Base64Unpadded :: Text -> Text
 pattern Base64UrlUnpadded :: Text -> Text
+
+-- additionally if using >=base64-0.3
+
+Base64Lenient :: ByteString -> ByteString
+Base64UrlLenient :: ByteString -> ByteString
+
+-- and
+
+Base64Lenient :: Text -> Text
+Base64UrlLenient :: Text -> Text
 ```
 
 These provide a convenient high level interface for passing Base64 encoded values.
@@ -44,6 +54,15 @@ _Base64Url :: Prism' Text Text
 _Base64Unpadded :: Prism' Text Text
 _Base64UrlUnpadded :: Prism' Text Text
 
+-- additionally if using >=base64-0.3
+
+_Base64Lenient :: Iso' ByteString ByteString
+_Base64UrlLenient :: Iso' ByteString ByteString
+
+-- and
+
+_Base64Lenient :: Iso' Text Text
+_Base64UrlLenient :: Iso' Text Text
 ```
 
 If a particular structure has a `Lens` into some `Text` or `ByteString` value they might want to encode (or decode), then composing such a `Lens` with these `Prisms` yields an affine `Traversal`, resulting in a structure which has the focus of its `Lens` encoded as or decoded from Base64(-url). All one needs to do is compose their optics:

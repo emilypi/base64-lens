@@ -37,7 +37,7 @@ library
                      , Data.Text.Encoding.Base64.Lens
 
   build-depends:       base       >=4.10 && <5
-                     , base64     >=0.3  && <0.4
+                     , base64     >=0.2  && <0.4
                      , bytestring >=0.10 && <0.11
                      , lens       >=4.0  && <4.19
                      , text       >=1.2  && <1.3

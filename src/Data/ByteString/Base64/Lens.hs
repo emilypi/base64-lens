@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 -- |
@@ -18,15 +19,19 @@ module Data.ByteString.Base64.Lens
 , _Base64Url
 , _Base64Unpadded
 , _Base64UrlUnpadded
+#if MIN_VERSION_base64(0,3,0)
 , _Base64Lenient
 , _Base64UrlLenient
+#endif
   -- * Patterns
 , pattern Base64
 , pattern Base64Url
 , pattern Base64Unpadded
 , pattern Base64UrlUnpadded
+#if MIN_VERSION_base64(0,3,0)
 , pattern Base64Lenient
 , pattern Base64UrlLenient
+#endif
 ) where
 
 
@@ -114,32 +119,37 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeB
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
 
--- | An 'Iso'' into the Base64u encoding of a 'ByteString' value
+#if MIN_VERSION_base64(0,3,0)
+-- | An 'Iso'' into the Base64 encoding of a 'ByteString' value
+-- using lenient decoding.
 --
 --
 -- _Note:_ This is not a lawful 'Iso'.
 --
--- >>> _Base64UrlUnpadded # "<<??>>"
--- "PDw_Pz4-"
+-- >>> "Sun" ^. _Base64Lenient
+-- "U3Vu"
 --
--- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
--- Just "<<??>>"
+-- >>> "U3Vu" ^. from _Base64Lenient
+-- "Sun"
 --
 _Base64Lenient :: Iso' ByteString ByteString
 _Base64Lenient = iso B64.encodeBase64' B64.decodeBase64Lenient
 
 -- | An 'Iso'' into the Base64url encoding of a 'ByteString' value
+-- using lenient decoding.
+--
 --
 -- _Note:_ This is not a lawful 'Iso'.
 --
--- >>> _Base64UrlUnpadded # "<<??>>"
+-- >>> "<<??>>" ^. _Base64UrlLenient
 -- "PDw_Pz4-"
 --
--- >>> "PDw_Pz4-" ^? _Base64UrlUnpadded
--- Just "<<??>>"
+-- >>> "PDw_Pz4-" ^. from _Base64UrlLenient
+-- "<<??>>"
 --
 _Base64UrlLenient :: Iso' ByteString ByteString
 _Base64UrlLenient = iso B64U.encodeBase64' B64U.decodeBase64Lenient
+#endif
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
@@ -168,6 +178,7 @@ pattern Base64UrlUnpadded :: ByteString -> ByteString
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
     Base64UrlUnpadded a = _Base64UrlUnpadded # a
 
+#if MIN_VERSION_base64(0,3,0)
 -- | Bidirectional pattern synonym for leniently Base64-encoded 'ByteString' values
 --
 pattern Base64Lenient :: ByteString -> ByteString
@@ -181,3 +192,4 @@ pattern Base64UrlLenient :: ByteString -> ByteString
 pattern Base64UrlLenient a <- (view (from _Base64UrlLenient) -> a) where
     Base64UrlLenient a = view _Base64UrlLenient a
 {-# COMPLETE Base64UrlLenient #-}
+#endif
