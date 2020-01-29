@@ -22,13 +22,13 @@ pattern Base64UrlUnpadded :: Text -> Text
 
 -- additionally if using >=base64-0.3
 
-Base64Lenient :: ByteString -> ByteString
-Base64UrlLenient :: ByteString -> ByteString
+pattern Base64Lenient :: ByteString -> ByteString
+pattern Base64UrlLenient :: ByteString -> ByteString
 
 -- and
 
-Base64Lenient :: Text -> Text
-Base64UrlLenient :: Text -> Text
+pattern Base64Lenient :: Text -> Text
+pattern Base64UrlLenient :: Text -> Text
 ```
 
 These provide a convenient high level interface for passing Base64 encoded values.
