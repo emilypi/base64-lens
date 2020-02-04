@@ -13,20 +13,14 @@ The pattern synonyms provided in this library are:
 pattern Base64 :: ByteString -> ByteString
 pattern Base64Url :: ByteString -> ByteString
 pattern Base64UrlUnpadded :: ByteString -> ByteString
+pattern Base64Lenient :: ByteString -> ByteString
+pattern Base64UrlLenient :: ByteString -> ByteString
 
--- and
+-- and 
 
 pattern Base64 :: Text -> Text
 pattern Base64Url :: Text -> Text
 pattern Base64UrlUnpadded :: Text -> Text
-
--- additionally if using >=base64-0.3
-
-pattern Base64Lenient :: ByteString -> ByteString
-pattern Base64UrlLenient :: ByteString -> ByteString
-
--- and
-
 pattern Base64Lenient :: Text -> Text
 pattern Base64UrlLenient :: Text -> Text
 ```
@@ -43,20 +37,14 @@ These provide a convenient high level interface for passing Base64 encoded value
 _Base64 :: Prism' ByteString ByteString
 _Base64Url :: Prism' ByteString ByteString
 _Base64UrlUnpadded :: Prism' ByteString ByteString
+_Base64Lenient :: Iso' ByteString ByteString
+_Base64UrlLenient :: Iso' ByteString ByteString
 
 -- and
 
 _Base64 :: Prism' Text Text
 _Base64Url :: Prism' Text Text
 _Base64UrlUnpadded :: Prism' Text Text
-
--- additionally if using >=base64-0.3
-
-_Base64Lenient :: Iso' ByteString ByteString
-_Base64UrlLenient :: Iso' ByteString ByteString
-
--- and
-
 _Base64Lenient :: Iso' Text Text
 _Base64UrlLenient :: Iso' Text Text
 ```
