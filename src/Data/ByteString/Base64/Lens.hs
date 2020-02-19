@@ -97,7 +97,7 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeB
 -- using lenient decoding.
 --
 --
--- _Note:_ This is not a lawful 'Iso'.
+-- _Note:_ This is not a lawful 'Iso'. Please take care!
 --
 -- >>> _Base64Lenient # "Sun"
 -- "U3Vu"
@@ -112,7 +112,7 @@ _Base64Lenient = iso B64.decodeBase64Lenient B64.encodeBase64'
 -- using lenient decoding.
 --
 --
--- _Note:_ This is not a lawful 'Iso'.
+-- _Note:_ This is not a lawful 'Iso'. Please take care!
 --
 -- >>> _Base64UrlLenient # "<<??>>"
 -- "PDw_Pz4-"
