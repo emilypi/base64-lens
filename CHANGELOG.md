@@ -1,5 +1,10 @@
 # Revision history for base64-lens
 
+## 0.3
+
+* Instead of focusing on the `Base64Lenient` `Iso` as a `Lens` (which swaps its focus compared to its sibling `Prism`s),
+  change it to be symmetrical with the other `Prism`s so that it can be used as a generalized `Prism`.
+
 ## 0.2
 
 * Bump `base64` dependency to settle on 0.4 with the "finalized" api.

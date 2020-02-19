@@ -99,14 +99,14 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeB
 --
 -- _Note:_ This is not a lawful 'Iso'.
 --
--- >>> "Sun" ^. _Base64Lenient
+-- >>> _Base64Lenient # "Sun"
 -- "U3Vu"
 --
--- >>> "U3Vu" ^. from _Base64Lenient
+-- >>> "U3Vu" ^. _Base64Lenient
 -- "Sun"
 --
 _Base64Lenient :: Iso' ByteString ByteString
-_Base64Lenient = iso B64.encodeBase64' B64.decodeBase64Lenient
+_Base64Lenient = iso B64.decodeBase64Lenient B64.encodeBase64'
 
 -- | An 'Iso'' into the Base64url encoding of a 'ByteString' value
 -- using lenient decoding.
@@ -114,14 +114,14 @@ _Base64Lenient = iso B64.encodeBase64' B64.decodeBase64Lenient
 --
 -- _Note:_ This is not a lawful 'Iso'.
 --
--- >>> "<<??>>" ^. _Base64UrlLenient
+-- >>> _Base64UrlLenient # "<<??>>"
 -- "PDw_Pz4-"
 --
--- >>> "PDw_Pz4-" ^. from _Base64UrlLenient
+-- >>> "PDw_Pz4-" ^. _Base64UrlLenient
 -- "<<??>>"
 --
 _Base64UrlLenient :: Iso' ByteString ByteString
-_Base64UrlLenient = iso B64U.encodeBase64' B64U.decodeBase64Lenient
+_Base64UrlLenient = iso B64U.decodeBase64Lenient B64U.encodeBase64'
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
