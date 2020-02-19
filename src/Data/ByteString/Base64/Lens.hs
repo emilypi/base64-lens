@@ -9,7 +9,7 @@
 -- Stability	: Experimental
 -- Portability	: non-portable
 --
--- This module contains 'Prism''s for Base64-encoding and
+-- This module contains 'Prism''s and 'Iso''s for Base64-encoding and
 -- decoding 'ByteString' values.
 --
 module Data.ByteString.Base64.Lens

@@ -9,7 +9,7 @@
 -- Stability	: Experimental
 -- Portability	: non-portable
 --
--- This module contains 'Prism's Base64-encoding and
+-- This module contains 'Prism's and 'Iso''s Base64-encoding and
 -- decoding 'Text' values.
 --
 module Data.Text.Encoding.Base64.Lens
