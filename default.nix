@@ -9,7 +9,7 @@ let
       }:
       mkDerivation {
         pname = "base64-lens";
-        version = "0.1.0.0";
+        version = "0.3.0";
         src = ./.;
         setupHaskellDepends = [ base Cabal cabal-doctest ];
         libraryHaskellDepends = [ base base64 bytestring lens text ];
