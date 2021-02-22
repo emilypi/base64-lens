@@ -4,19 +4,19 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, base64, bytestring, Cabal
-      , cabal-doctest, doctest, lens, stdenv, text
+  f = { mkDerivation, base, base64, bytestring, lens, lib, text
+      , text-short
       }:
       mkDerivation {
         pname = "base64-lens";
-        version = "0.3.0";
+        version = "0.3.1";
         src = ./.;
-        setupHaskellDepends = [ base Cabal cabal-doctest ];
-        libraryHaskellDepends = [ base base64 bytestring lens text ];
-        testHaskellDepends = [ base doctest lens ];
+        libraryHaskellDepends = [
+          base base64 bytestring lens text text-short
+        ];
         homepage = "https://github.com/emilypi/base64-lens";
         description = "Optics for the Base64 library";
-        license = stdenv.lib.licenses.bsd3;
+        license = lib.licenses.bsd3;
       };
 
   haskellPackages = if compiler == "default"

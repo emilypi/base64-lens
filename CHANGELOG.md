@@ -1,5 +1,12 @@
 # Revision history for base64-lens
 
+## 0.3.1
+
+* Add lazy and short text and bytestring optics
+* Add safe/trustworthy pragmas
+* Migrate to Github CI
+* Update nix derivation
+
 ## 0.3
 
 * Instead of focusing on the `Base64Lenient` `Iso` as a `Lens` (which swaps its focus compared to its sibling `Prism`s),

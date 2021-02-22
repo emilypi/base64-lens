@@ -7,7 +7,7 @@
 {-# LANGUAGE Trustworthy #-}
 #endif
 -- |
--- Module       : Data.ByteString.Base64.Lens
+-- Module       : Data.ByteString.Lazy.Base64.Lens
 -- Copyright 	: (c) 2019-2021 Emily Pillmore
 -- License	: BSD-style
 --
@@ -18,7 +18,7 @@
 -- This module contains 'Prism''s and 'Iso''s for Base64-encoding and
 -- decoding 'ByteString' values.
 --
-module Data.ByteString.Base64.Lens
+module Data.ByteString.Lazy.Base64.Lens
 ( -- * Prisms
   _Base64
 , _Base64Url
@@ -36,15 +36,15 @@ module Data.ByteString.Base64.Lens
 
 import Control.Lens
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Base64.URL as B64U
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Base64 as BL64
+import qualified Data.ByteString.Lazy.Base64.URL as BL64U
 
 
 -- $setup
 --
 -- >>> import Control.Lens
--- >>> import Data.ByteString.Base64.Lens
+-- >>> import Data.ByteString.Lazy.Base64.Lens
 --
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XTypeApplications
@@ -62,7 +62,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 -- Just "Sun"
 --
 _Base64 :: Prism' ByteString ByteString
-_Base64 = prism' B64.encodeBase64' $ \s -> case B64.decodeBase64 s of
+_Base64 = prism' BL64.encodeBase64' $ \s -> case BL64.decodeBase64 s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64 #-}
@@ -76,7 +76,7 @@ _Base64 = prism' B64.encodeBase64' $ \s -> case B64.decodeBase64 s of
 -- Just "<<???>>"
 --
 _Base64Url :: Prism' ByteString ByteString
-_Base64Url = prism' B64U.encodeBase64' $ \s -> case B64U.decodeBase64 s of
+_Base64Url = prism' BL64U.encodeBase64' $ \s -> case BL64U.decodeBase64 s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64Url #-}
@@ -94,7 +94,7 @@ _Base64Url = prism' B64U.encodeBase64' $ \s -> case B64U.decodeBase64 s of
 -- Just "<<??>>"
 --
 _Base64UrlUnpadded :: Prism' ByteString ByteString
-_Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeBase64Unpadded s of
+_Base64UrlUnpadded = prism' BL64U.encodeBase64Unpadded' $ \s -> case BL64U.decodeBase64Unpadded s of
     Left _ -> Nothing
     Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
@@ -112,7 +112,7 @@ _Base64UrlUnpadded = prism' B64U.encodeBase64Unpadded' $ \s -> case B64U.decodeB
 -- "Sun"
 --
 _Base64Lenient :: Iso' ByteString ByteString
-_Base64Lenient = iso B64.decodeBase64Lenient B64.encodeBase64'
+_Base64Lenient = iso BL64.decodeBase64Lenient BL64.encodeBase64'
 
 -- | An 'Iso'' into the Base64url encoding of a 'ByteString' value
 -- using lenient decoding.
@@ -127,7 +127,7 @@ _Base64Lenient = iso B64.decodeBase64Lenient B64.encodeBase64'
 -- "<<??>>"
 --
 _Base64UrlLenient :: Iso' ByteString ByteString
-_Base64UrlLenient = iso B64U.decodeBase64Lenient B64U.encodeBase64'
+_Base64UrlLenient = iso BL64U.decodeBase64Lenient BL64U.encodeBase64'
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
