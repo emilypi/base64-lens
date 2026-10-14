@@ -23,11 +23,6 @@ source-repository head
   type:     git
   location: https://github.com/emilypi/base64-lens.git
 
-source-repository this
-  type:     git
-  location: https://github.com/emilypi/base64-lens.git
-  tag:      v0.4
-
 library
   exposed-modules:
     Data.Base64.Types.Lens
