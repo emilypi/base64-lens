@@ -19,7 +19,7 @@ module Data.Text.Encoding.Base64.Error.Lens
 ) where
 
 
-import Control.Lens
+import Control.Lens (Prism, Prism', prism, prism')
 
 import Data.Text (Text)
 import Data.Text.Encoding.Base64.Error (Base64Error(..))
@@ -32,9 +32,9 @@ _DecodeError = prism' DecodeError $ \case
     DecodeError t -> Just t
     ConversionError{} -> Nothing
 
--- | A 'Prism'' into the 'ConversionError' case of a 'Base64Error'
+-- | Focus on the 'ConversionError' payload, allowing its type to change.
 --
-_ConversionError :: Prism' (Base64Error err) err
-_ConversionError = prism' ConversionError $ \case
-    ConversionError err -> Just err
-    DecodeError{} -> Nothing
+_ConversionError :: Prism (Base64Error a) (Base64Error b) a b
+_ConversionError = prism ConversionError $ \case
+    ConversionError err -> Right err
+    DecodeError t -> Left (DecodeError t)

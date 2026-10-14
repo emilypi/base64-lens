@@ -4,14 +4,22 @@
 
 * Support `base64` 2.0 and GHC 9.6–9.14; update dependency bounds for
   `bytestring` 0.11–0.12, `text` 2.0–2.2, and `lens` 5.0–5.3.
-* Adapt all six string representations to typed encoders and checked untyped
-  decoders while retaining the public optic and pattern types.
-* Fix `Base64Lenient` and `Base64UrlLenient`: construction now encodes and
-  matching decodes, consistently with their optics and the strict patterns.
-* Use `Trustworthy` for encoding modules because `base64` 2.0's modules are
-  not Safe Haskell modules; the error optics remain `Safe`.
-* Add regression and property tests for all representations, patterns, malformed
-  inputs, binary data, Unicode, and error prisms. Replace the unused doctest stub.
+* Change string optics from raw-string prisms to typed isomorphisms over
+  `Base64` wrappers. Encoding records the alphabet; decoding consumes the
+  corresponding wrapper. Validate untrusted standard input with `parseBase64`.
+* Change all string patterns to construct and match typed wrappers. Lenient
+  optics and patterns use `NonStandard`; fix their patterns to encode on
+  construction and decode on matching.
+* Add `Data.Base64.Types.Lens` with a type-changing payload isomorphism,
+  `Wrapped`/`Rewrapped` instances, and prisms for all `Alphabet` constructors.
+  Payload optics preserve the alphabet index and do not validate or encode.
+* Generalize `_ConversionError` to allow changing the error payload type.
+* Simplify the string optics to direct compositions of the typed codecs.
+  Use `Trustworthy` because `base64` 2.0's encoding modules are not Safe
+  Haskell modules; the error optics remain `Safe`.
+* Add regression and property tests for all representations, typed patterns,
+  wrapper optics, alphabet constructors, binary data, Unicode, and errors.
+  Replace the unused doctest stub.
 * Refresh CI to test source distributions across supported compilers and both
   scalar and SIMD decoding backends.
 
