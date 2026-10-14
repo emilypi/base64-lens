@@ -42,7 +42,17 @@ data Optics a = Optics
     , unpadded :: Codec 'UrlUnpadded a
     , lenient :: Codec 'NonStandard a
     , urlLenient :: Codec 'NonStandard a
+    , standardUntyped :: Prism' a a
+    , urlUntyped :: Prism' a a
+    , unpaddedUntyped :: Prism' a a
     }
+
+vectors :: IsString a => [(a, a, a)]
+vectors =
+    [ ("", "", ""), ("f", "Zg==", "Zg"), ("fo", "Zm8=", "Zm8")
+    , ("foo", "Zm9v", "Zm9v"), ("foob", "Zm9vYg==", "Zm9vYg")
+    , ("fooba", "Zm9vYmE=", "Zm9vYmE"), ("foobar", "Zm9vYmFy", "Zm9vYmFy")
+    ]
 
 main :: IO ()
 main = defaultMain $ testGroup "base64-lens"
@@ -59,6 +69,15 @@ main = defaultMain $ testGroup "base64-lens"
     , roundtrips "Text Unicode" textOptics T.pack
     , roundtrips "Lazy Text Unicode, one character per chunk" lazyTextOptics (TL.fromChunks . map T.singleton)
     , roundtrips "ShortText Unicode" shortTextOptics TS.pack
+    , testGroup "Untyped prisms"
+        [ untypedSuite "ByteString" byteStringOptics
+        , untypedSuite "Lazy ByteString" lazyByteStringOptics
+        , untypedSuite "ShortByteString" shortByteStringOptics
+        , untypedSuite "Text" textOptics
+        , untypedSuite "Lazy Text" lazyTextOptics
+        , untypedSuite "ShortText" shortTextOptics
+        ]
+    , chunkedPrismTests
     , wrapperTests
     , alphabetTests
     , errorTests
@@ -78,11 +97,7 @@ suite name o = testGroup name
             check (unpadded o) raw bare
             check (lenient o) raw encoded
             check (urlLenient o) raw encoded
-        | (raw, encoded, bare) <-
-            [ ("", "", ""), ("f", "Zg==", "Zg"), ("fo", "Zm8=", "Zm8")
-            , ("foo", "Zm9v", "Zm9v"), ("foob", "Zm9vYg==", "Zm9vYg")
-            , ("fooba", "Zm9vYmE=", "Zm9vYmE"), ("foobar", "Zm9vYmFy", "Zm9vYmFy")
-            ]
+        | (raw, encoded, bare) <- vectors
         ]
     , testCase "distinct alphabets and padding" $ do
         check (standard o) "<<???>>" "PDw/Pz8+Pg=="
@@ -103,6 +118,69 @@ suite name o = testGroup name
         construct c raw @?= assertBase64 encoded
         deconstruct c (assertBase64 encoded) @?= raw
 
+untypedSuite :: (Eq a, Show a, IsString a) => String -> Optics a -> TestTree
+untypedSuite name o = testGroup name
+    [ testGroup "RFC 4648 vectors"
+        [ testCase (show raw) $ do
+            review (standardUntyped o) raw @?= padded
+            preview (standardUntyped o) padded @?= Just raw
+            review (urlUntyped o) raw @?= padded
+            preview (urlUntyped o) padded @?= Just raw
+            preview (urlUntyped o) bare @?= Just raw
+            review (unpaddedUntyped o) raw @?= bare
+            preview (unpaddedUntyped o) bare @?= Just raw
+        | (raw, padded, bare) <- vectors
+        ]
+    , testCase "distinct alphabets" $ do
+        review (standardUntyped o) "<<???>>" @?= "PDw/Pz8+Pg=="
+        review (urlUntyped o) "<<???>>" @?= "PDw_Pz8-Pg=="
+        preview (standardUntyped o) "PDw/Pz8+Pg==" @?= Just "<<???>>"
+        preview (urlUntyped o) "PDw_Pz8-Pg==" @?= Just "<<???>>"
+        reject (standardUntyped o) "PDw_Pz8-Pg=="
+        reject (urlUntyped o) "PDw/Pz8+Pg=="
+        reject (unpaddedUntyped o) "PDw/Pz8+Pg"
+    , testGroup "malformed standard encoding"
+        [ testCase (show bad) $ reject (standardUntyped o) bad
+        | bad <- ["%", "Z", "Zg", "Zg=", "Zg===", "=m9v", "Zm=v", "Zh==", "Zm9=", "Zg==AAAA", "Zm9v\n"]
+        ]
+    , testGroup "malformed URL encoding"
+        [ testCase (show bad) $ reject (urlUntyped o) bad
+        | bad <- ["%", "Z", "Zg=", "Zg===", "Zh==", "Zh", "Zm9", "Zm9=", "Zg==AAAA", "Zm9v\n"]
+        ]
+    , testGroup "malformed unpadded URL encoding"
+        [ testCase (show bad) $ reject (unpaddedUntyped o) bad
+        | bad <- ["%", "Z", "Zg==", "Zm8=", "Zh", "Zm9", "Zg==AAAA", "Zm9v\n"]
+        ]
+    , testCase "URL matching accepts optional padding; review normalizes it" $
+        fmap (review (urlUntyped o)) (preview (urlUntyped o) "Zg") @?= Just "Zg=="
+    ]
+  where
+    -- Failed matches must preserve the original encoded input.
+    reject p bad = matching p bad @?= Left bad
+
+chunkedPrismTests :: TestTree
+chunkedPrismTests = testGroup "Untyped lazy input across chunk boundaries"
+    [ testCase "ByteString, valid input" $ do
+        preview L._Base64Untyped (bytes "Zg==") @?= Just "f"
+        preview L._Base64UrlUntyped (bytes "Zg==") @?= Just "f"
+        preview L._Base64UrlUnpaddedUntyped (bytes "Zg") @?= Just "f"
+    , testCase "ByteString, invalid suffix" $ do
+        matching L._Base64Untyped (bytes "Zg==AAAA") @?= Left (bytes "Zg==AAAA")
+        matching L._Base64UrlUntyped (bytes "Zg==AAAA") @?= Left (bytes "Zg==AAAA")
+        matching L._Base64UrlUnpaddedUntyped (bytes "Zm9v%") @?= Left (bytes "Zm9v%")
+    , testCase "Text, valid input" $ do
+        preview V._Base64Untyped (text "Zg==") @?= Just "f"
+        preview V._Base64UrlUntyped (text "Zg==") @?= Just "f"
+        preview V._Base64UrlUnpaddedUntyped (text "Zg") @?= Just "f"
+    , testCase "Text, invalid suffix" $ do
+        matching V._Base64Untyped (text "Zg==AAAA") @?= Left (text "Zg==AAAA")
+        matching V._Base64UrlUntyped (text "Zg==AAAA") @?= Left (text "Zg==AAAA")
+        matching V._Base64UrlUnpaddedUntyped (text "Zm9v%") @?= Left (text "Zm9v%")
+    ]
+  where
+    bytes = BL.fromChunks . map BS.singleton . BS.unpack
+    text = TL.fromChunks . map T.singleton
+
 roundtrips :: (Arbitrary b, Show b, Eq a, Show a) => String -> Optics a -> (b -> a) -> TestTree
 roundtrips name o pack = testGroup name
     [ laws "standard" (standard o)
@@ -110,8 +188,19 @@ roundtrips name o pack = testGroup name
     , laws "unpadded URL" (unpadded o)
     , laws "lenient, canonical input" (lenient o)
     , laws "lenient URL, canonical input" (urlLenient o)
+    , prismLaws "untyped standard" (standardUntyped o)
+    , prismLaws "untyped URL, canonical padded input" (urlUntyped o)
+    , prismLaws "untyped unpadded URL" (unpaddedUntyped o)
     ]
   where
+    prismLaws codecName p = testGroup codecName
+        [ testProperty "preview . review" $ \input ->
+            let raw = pack input
+            in preview (clonePrism p) (review (clonePrism p) raw) === Just raw
+        , testProperty "review . preview, canonical input" $ \input ->
+            let encoded = review (clonePrism p) (pack input)
+            in fmap (review (clonePrism p)) (preview (clonePrism p) encoded) === Just encoded
+        ]
     laws codecName c = testGroup codecName
         [ testProperty "decode . encode" $ \input ->
             let raw = pack input in view (optic c) (review (optic c) raw) === raw
@@ -183,6 +272,7 @@ byteStringOptics = Optics
     (Codec B._Base64UrlUnpadded B.Base64UrlUnpadded (\(B.Base64UrlUnpadded a) -> a))
     (Codec B._Base64Lenient B.Base64Lenient (\(B.Base64Lenient a) -> a))
     (Codec B._Base64UrlLenient B.Base64UrlLenient (\(B.Base64UrlLenient a) -> a))
+    B._Base64Untyped B._Base64UrlUntyped B._Base64UrlUnpaddedUntyped
 
 lazyByteStringOptics :: Optics BL.ByteString
 lazyByteStringOptics = Optics
@@ -191,6 +281,7 @@ lazyByteStringOptics = Optics
     (Codec L._Base64UrlUnpadded L.Base64UrlUnpadded (\(L.Base64UrlUnpadded a) -> a))
     (Codec L._Base64Lenient L.Base64Lenient (\(L.Base64Lenient a) -> a))
     (Codec L._Base64UrlLenient L.Base64UrlLenient (\(L.Base64UrlLenient a) -> a))
+    L._Base64Untyped L._Base64UrlUntyped L._Base64UrlUnpaddedUntyped
 
 shortByteStringOptics :: Optics SBS.ShortByteString
 shortByteStringOptics = Optics
@@ -199,6 +290,7 @@ shortByteStringOptics = Optics
     (Codec S._Base64UrlUnpadded S.Base64UrlUnpadded (\(S.Base64UrlUnpadded a) -> a))
     (Codec S._Base64Lenient S.Base64Lenient (\(S.Base64Lenient a) -> a))
     (Codec S._Base64UrlLenient S.Base64UrlLenient (\(S.Base64UrlLenient a) -> a))
+    S._Base64Untyped S._Base64UrlUntyped S._Base64UrlUnpaddedUntyped
 
 textOptics :: Optics T.Text
 textOptics = Optics
@@ -207,6 +299,7 @@ textOptics = Optics
     (Codec U._Base64UrlUnpadded U.Base64UrlUnpadded (\(U.Base64UrlUnpadded a) -> a))
     (Codec U._Base64Lenient U.Base64Lenient (\(U.Base64Lenient a) -> a))
     (Codec U._Base64UrlLenient U.Base64UrlLenient (\(U.Base64UrlLenient a) -> a))
+    U._Base64Untyped U._Base64UrlUntyped U._Base64UrlUnpaddedUntyped
 
 lazyTextOptics :: Optics TL.Text
 lazyTextOptics = Optics
@@ -215,6 +308,7 @@ lazyTextOptics = Optics
     (Codec V._Base64UrlUnpadded V.Base64UrlUnpadded (\(V.Base64UrlUnpadded a) -> a))
     (Codec V._Base64Lenient V.Base64Lenient (\(V.Base64Lenient a) -> a))
     (Codec V._Base64UrlLenient V.Base64UrlLenient (\(V.Base64UrlLenient a) -> a))
+    V._Base64Untyped V._Base64UrlUntyped V._Base64UrlUnpaddedUntyped
 
 shortTextOptics :: Optics TS.ShortText
 shortTextOptics = Optics
@@ -223,3 +317,4 @@ shortTextOptics = Optics
     (Codec W._Base64UrlUnpadded W.Base64UrlUnpadded (\(W.Base64UrlUnpadded a) -> a))
     (Codec W._Base64Lenient W.Base64Lenient (\(W.Base64Lenient a) -> a))
     (Codec W._Base64UrlLenient W.Base64UrlLenient (\(W.Base64UrlLenient a) -> a))
+    W._Base64Untyped W._Base64UrlUntyped W._Base64UrlUnpaddedUntyped

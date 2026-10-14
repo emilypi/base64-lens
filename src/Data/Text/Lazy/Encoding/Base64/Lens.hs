@@ -13,7 +13,8 @@
 --
 -- Optics and patterns for Base64-encoded 'Text' values.
 -- The alphabet is recorded in the t'Base64' wrapper. Validate untrusted
--- standard-alphabet input with 'B64TL.parseBase64' before decoding.
+-- standard-alphabet input with 'B64TL.parseBase64' before decoding,
+-- or use '_Base64Untyped' to decode an ordinary string directly.
 -- For access to the encoded payload itself, see "Data.Base64.Types.Lens".
 --
 module Data.Text.Lazy.Encoding.Base64.Lens
@@ -21,6 +22,10 @@ module Data.Text.Lazy.Encoding.Base64.Lens
   _Base64
 , _Base64Url
 , _Base64UrlUnpadded
+  -- * Untyped decoding prisms
+, _Base64Untyped
+, _Base64UrlUntyped
+, _Base64UrlUnpaddedUntyped
   -- * Lenient decoding
 , _Base64Lenient
 , _Base64UrlLenient
@@ -32,7 +37,7 @@ module Data.Text.Lazy.Encoding.Base64.Lens
 , pattern Base64UrlLenient
 ) where
 
-import Control.Lens (Iso', iso, view, (#))
+import Control.Lens (Iso', Prism', iso, prism', view, (#))
 import Data.Base64.Types (Alphabet(..), Base64, coerceBase64, extractBase64)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding.Base64 as B64TL
@@ -79,6 +84,58 @@ _Base64Url = iso B64TLU.decodeBase64 B64TLU.encodeBase64
 _Base64UrlUnpadded :: Iso' (Base64 'UrlUnpadded Text) Text
 _Base64UrlUnpadded = iso B64TLU.decodeBase64Unpadded B64TLU.encodeBase64Unpadded
 {-# INLINE _Base64UrlUnpadded #-}
+
+-- | Decode a canonical, padded standard Base64 string, or encode in reverse.
+-- Returns 'Nothing' on a Base64 decoding error. All three untyped prisms
+-- retain the decoders' UTF-8 requirement: invalid decoded UTF-8 may throw.
+--
+-- >>> _Base64Untyped # "Sun"
+-- "U3Vu"
+--
+-- >>> "U3Vu" ^? _Base64Untyped
+-- Just "Sun"
+--
+-- >>> "U3V=" ^? _Base64Untyped
+-- Nothing
+--
+_Base64Untyped :: Prism' Text Text
+_Base64Untyped = prism' (extractBase64 . B64TL.encodeBase64)
+    (either (const Nothing) Just . B64TL.decodeBase64Untyped)
+{-# INLINE _Base64Untyped #-}
+
+-- | Decode a padded or unpadded URL-safe Base64 string, or encode with padding
+-- in reverse. Returns 'Nothing' on a Base64 decoding error.
+--
+-- Matching unpadded input and reviewing the result normalizes its padding,
+-- so this is not a lawful 'Prism'' over all accepted input.
+--
+-- >>> _Base64UrlUntyped # "<<???>>"
+-- "PDw_Pz8-Pg=="
+--
+-- >>> "PDw_Pz8-Pg" ^? _Base64UrlUntyped
+-- Just "<<???>>"
+--
+_Base64UrlUntyped :: Prism' Text Text
+_Base64UrlUntyped = prism' (extractBase64 . B64TLU.encodeBase64)
+    (either (const Nothing) Just . B64TLU.decodeBase64Untyped)
+{-# INLINE _Base64UrlUntyped #-}
+
+-- | Decode a canonical, unpadded URL-safe Base64 string, or encode without
+-- padding in reverse. Rejects padded input and other Base64 decoding errors.
+--
+-- >>> _Base64UrlUnpaddedUntyped # "f"
+-- "Zg"
+--
+-- >>> "Zg" ^? _Base64UrlUnpaddedUntyped
+-- Just "f"
+--
+-- >>> "Zg==" ^? _Base64UrlUnpaddedUntyped
+-- Nothing
+--
+_Base64UrlUnpaddedUntyped :: Prism' Text Text
+_Base64UrlUnpaddedUntyped = prism' (extractBase64 . B64TLU.encodeBase64Unpadded)
+    (either (const Nothing) Just . B64TLU.decodeBase64UnpaddedUntyped)
+{-# INLINE _Base64UrlUnpaddedUntyped #-}
 
 -- | Decode lenient standard-alphabet Base64, or encode in reverse.
 --

@@ -56,6 +56,36 @@ The `Text` optics expect the decoded payload to be UTF-8, as in the underlying
 library. Invalid UTF-8 may throw an exception. Use the `ByteString` optics for
 arbitrary binary payloads.
 
+## Untyped decoding prisms
+
+For ordinary encoded strings, each string module also provides:
+
+| Prism | Checked decoder | Review produces |
+| --- | --- | --- |
+| `_Base64Untyped` | `decodeBase64Untyped` | Standard, padded Base64 |
+| `_Base64UrlUntyped` | URL `decodeBase64Untyped` | URL-safe, padded Base64 |
+| `_Base64UrlUnpaddedUntyped` | URL `decodeBase64UnpaddedUntyped` | URL-safe, unpadded Base64 |
+
+Each has type `Prism' a a`, where `a` is the module's string type. Preview
+returns the decoded payload on success and `Nothing` on a Base64 decoding
+error; review encodes directly to an ordinary string.
+
+```haskell
+-- Just "Sun"
+untypedDecoded = "U3Vu" ^? B64._Base64Untyped
+
+-- Nothing: non-canonical padding bits
+untypedRejected = "U3V=" ^? B64._Base64Untyped
+
+-- "U3Vu"
+untypedEncoded = B64._Base64Untyped # "Sun"
+```
+
+The URL prism accepts both padded and unpadded input, matching its decoder.
+Reviewing a successful match adds any required padding, so it is not a lawful
+prism over all accepted input. The unpadded URL prism rejects padding. The
+`Text` prisms retain the underlying decoders' UTF-8 requirement described above.
+
 ## Wrapper and alphabet optics
 
 `Data.Base64.Types.Lens` gives the wrapper its own namespace. Its `_Base64`
@@ -88,11 +118,14 @@ type-changing `_ConversionError` prism for mapping conversion failures.
 
 ## Migrating from 0.3
 
-The string optics now operate on `Base64` wrappers instead of encoded strings.
-Use `view` or `(^.)` for typed decoding. Replace standard-alphabet validation
-through `preview _Base64` with `parseBase64`, then decode the returned wrapper.
-To pass encoded output to an API expecting an ordinary string, extract it with
-`Wrapped._Base64` or `extractBase64`.
+The existing optic names now operate on `Base64` wrappers. Use `view` or `(^.)`
+for typed decoding. Use `parseBase64` to validate external standard-alphabet
+input, then decode the returned wrapper. Extract encoded output with
+`Wrapped._Base64` or `extractBase64` when an API expects an ordinary string.
+
+To retain raw-string prism usage, switch `_Base64` to `_Base64Untyped`,
+`_Base64Url` to `_Base64UrlUntyped`, and `_Base64UrlUnpadded` to
+`_Base64UrlUnpaddedUntyped`. These support `preview` or `(^?)` as before.
 
 The lenient patterns also change direction: construction encodes and matching
 decodes, consistently with the other patterns.

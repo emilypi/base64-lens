@@ -7,6 +7,9 @@
 * Change string optics from raw-string prisms to typed isomorphisms over
   `Base64` wrappers. Encoding records the alphabet; decoding consumes the
   corresponding wrapper. Validate untrusted standard input with `parseBase64`.
+* Add `_Base64Untyped`, `_Base64UrlUntyped`, and
+  `_Base64UrlUnpaddedUntyped` alongside the typed optics in all six string
+  modules. These restore raw-string prisms using the checked untyped decoders.
 * Change all string patterns to construct and match typed wrappers. Lenient
   optics and patterns use `NonStandard`; fix their patterns to encode on
   construction and decode on matching.
@@ -18,7 +21,8 @@
   Use `Trustworthy` because `base64` 2.0's encoding modules are not Safe
   Haskell modules; the error optics remain `Safe`.
 * Add regression and property tests for all representations, typed patterns,
-  wrapper optics, alphabet constructors, binary data, Unicode, and errors.
+  wrapper optics, alphabet constructors, untyped decoding and rejection, lazy
+  chunk boundaries, binary data, Unicode, and errors.
   Replace the unused doctest stub.
 * Refresh CI to test source distributions across supported compilers and both
   scalar and SIMD decoding backends.

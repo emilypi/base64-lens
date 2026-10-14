@@ -2,7 +2,7 @@ cabal-version:      2.0
 name:               base64-lens
 version:            0.4
 synopsis:           Optics for the Base64 library
-description:        Optics and pattern synonyms for typed Base64 values
+description:        Optics and pattern synonyms for Base64 values
 homepage:           https://github.com/emilypi/base64-lens
 bug-reports:        https://github.com/emilypi/base64-lens/issues
 license:            BSD3
