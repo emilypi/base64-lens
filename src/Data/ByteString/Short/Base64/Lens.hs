@@ -1,14 +1,9 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
-#if MIN_VERSION_lens(5,0,0)
-{-# LANGUAGE Safe #-}
-#else
 {-# LANGUAGE Trustworthy #-}
-#endif
 -- |
 -- Module       : Data.ByteString.Short.Base64.Lens
--- Copyright 	: (c) 2019-2021 Emily Pillmore
+-- Copyright 	: (c) 2019-2026 Emily Pillmore
 -- License	: BSD-style
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
@@ -36,6 +31,8 @@ module Data.ByteString.Short.Base64.Lens
 
 import Control.Lens
 
+import Data.Base64.Types (extractBase64)
+
 import Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short.Base64 as BS64
 import qualified Data.ByteString.Short.Base64.URL as BS64U
@@ -62,9 +59,10 @@ import qualified Data.ByteString.Short.Base64.URL as BS64U
 -- Just "Sun"
 --
 _Base64 :: Prism' ShortByteString ShortByteString
-_Base64 = prism' BS64.encodeBase64' $ \s -> case BS64.decodeBase64 s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64 = prism' (extractBase64 . BS64.encodeBase64') $ \s ->
+    case BS64.decodeBase64Untyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64 #-}
 
 -- | A 'Prism'' into the Base64url encoding of a 'ShortByteString' value
@@ -76,16 +74,15 @@ _Base64 = prism' BS64.encodeBase64' $ \s -> case BS64.decodeBase64 s of
 -- Just "<<???>>"
 --
 _Base64Url :: Prism' ShortByteString ShortByteString
-_Base64Url = prism' BS64U.encodeBase64' $ \s -> case BS64U.decodeBase64 s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64Url = prism' (extractBase64 . BS64U.encodeBase64') $ \s ->
+    case BS64U.decodeBase64Untyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64Url #-}
 
 -- | A 'Prism'' into the Base64url encoding of a 'ShortByteString' value
 --
--- Please note that unpadded variants should only be used
--- when assumptions about the data can be made. In particular, if the length of
--- the input is divisible by 3, then this is a safe function to call.
+-- Encodes without padding and rejects padded input when decoding.
 --
 -- >>> _Base64UrlUnpadded # "<<??>>"
 -- "PDw_Pz4-"
@@ -94,9 +91,10 @@ _Base64Url = prism' BS64U.encodeBase64' $ \s -> case BS64U.decodeBase64 s of
 -- Just "<<??>>"
 --
 _Base64UrlUnpadded :: Prism' ShortByteString ShortByteString
-_Base64UrlUnpadded = prism' BS64U.encodeBase64Unpadded' $ \s -> case BS64U.decodeBase64Unpadded s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64UrlUnpadded = prism' (extractBase64 . BS64U.encodeBase64Unpadded') $ \s ->
+    case BS64U.decodeBase64UnpaddedUntyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
 
 -- | An 'Iso'' into the Base64 encoding of a 'ShortByteString' value
@@ -112,7 +110,7 @@ _Base64UrlUnpadded = prism' BS64U.encodeBase64Unpadded' $ \s -> case BS64U.decod
 -- "Sun"
 --
 _Base64Lenient :: Iso' ShortByteString ShortByteString
-_Base64Lenient = iso BS64.decodeBase64Lenient BS64.encodeBase64'
+_Base64Lenient = iso BS64.decodeBase64Lenient (extractBase64 . BS64.encodeBase64')
 
 -- | An 'Iso'' into the Base64url encoding of a 'ShortByteString' value
 -- using lenient decoding.
@@ -127,7 +125,7 @@ _Base64Lenient = iso BS64.decodeBase64Lenient BS64.encodeBase64'
 -- "<<??>>"
 --
 _Base64UrlLenient :: Iso' ShortByteString ShortByteString
-_Base64UrlLenient = iso BS64U.decodeBase64Lenient BS64U.encodeBase64'
+_Base64UrlLenient = iso BS64U.decodeBase64Lenient (extractBase64 . BS64U.encodeBase64')
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
@@ -153,13 +151,13 @@ pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
 -- | Bidirectional pattern synonym for leniently Base64-encoded 'ShortByteString' values
 --
 pattern Base64Lenient :: ShortByteString -> ShortByteString
-pattern Base64Lenient a <- (view (from _Base64Lenient) -> a) where
-    Base64Lenient a = view _Base64Lenient a
+pattern Base64Lenient a <- (view _Base64Lenient -> a) where
+    Base64Lenient a = _Base64Lenient # a
 {-# COMPLETE Base64Lenient #-}
 
 -- | Bidirectional pattern synonym for leniently Base64-encoded 'ShortByteString' values
 --
 pattern Base64UrlLenient :: ShortByteString -> ShortByteString
-pattern Base64UrlLenient a <- (view (from _Base64UrlLenient) -> a) where
-    Base64UrlLenient a = view _Base64UrlLenient a
+pattern Base64UrlLenient a <- (view _Base64UrlLenient -> a) where
+    Base64UrlLenient a = _Base64UrlLenient # a
 {-# COMPLETE Base64UrlLenient #-}

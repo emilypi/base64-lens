@@ -1,13 +1,8 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
-#if MIN_VERSION_lens(5,0,0)
 {-# LANGUAGE Safe #-}
-#else
-{-# LANGUAGE Trustworthy #-}
-#endif
 -- |
 -- Module       : Data.Text.Encoding.Base64.Error.Lens
--- Copyright    : (c) 2019-2021 Emily Pillmore
+-- Copyright    : (c) 2019-2026 Emily Pillmore
 -- License      : BSD-style
 --
 -- Maintainer   : Emily Pillmore <emilypi@cohomolo.gy>

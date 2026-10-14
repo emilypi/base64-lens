@@ -1,14 +1,9 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
-#if MIN_VERSION_lens(5,0,0)
-{-# LANGUAGE Safe #-}
-#else
 {-# LANGUAGE Trustworthy #-}
-#endif
 -- |
 -- Module       : Data.Text.Lazy.Encoding.Base64.Lens
--- Copyright 	: (c) 2019-2021 Emily Pillmore
+-- Copyright 	: (c) 2019-2026 Emily Pillmore
 -- License	: BSD-style
 --
 -- Maintainer	: Emily Pillmore <emilypi@cohomolo.gy>
@@ -35,6 +30,8 @@ module Data.Text.Lazy.Encoding.Base64.Lens
 
 import Control.Lens
 
+import Data.Base64.Types (extractBase64)
+
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding.Base64 as B64TL
 import qualified Data.Text.Lazy.Encoding.Base64.URL as B64TLU
@@ -60,9 +57,10 @@ import qualified Data.Text.Lazy.Encoding.Base64.URL as B64TLU
 -- Just "Sun"
 --
 _Base64 :: Prism' Text Text
-_Base64 = prism' B64TL.encodeBase64 $ \s -> case B64TL.decodeBase64 s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64 = prism' (extractBase64 . B64TL.encodeBase64) $ \s ->
+    case B64TL.decodeBase64Untyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64 #-}
 
 -- | A 'Prism' into the Base64-url encoding of a 'Text' value.
@@ -74,16 +72,15 @@ _Base64 = prism' B64TL.encodeBase64 $ \s -> case B64TL.decodeBase64 s of
 -- Just "<<???>>"
 --
 _Base64Url :: Prism' Text Text
-_Base64Url = prism' B64TLU.encodeBase64 $ \s -> case B64TLU.decodeBase64 s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64Url = prism' (extractBase64 . B64TLU.encodeBase64) $ \s ->
+    case B64TLU.decodeBase64Untyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64Url #-}
 
 -- | A 'Prism' into the Base64-url encoding of a 'Text' value.
 --
--- Please note that unpadded variants should only be used
--- when assumptions about the data can be made. In particular, if the length of
--- the input is divisible by 3, then this is a safe function to call.
+-- Encodes without padding and rejects padded input when decoding.
 --
 -- >>> _Base64UrlUnpadded # "<<??>>"
 -- "PDw_Pz4-"
@@ -92,9 +89,10 @@ _Base64Url = prism' B64TLU.encodeBase64 $ \s -> case B64TLU.decodeBase64 s of
 -- Just "<<??>>"
 --
 _Base64UrlUnpadded :: Prism' Text Text
-_Base64UrlUnpadded = prism' B64TLU.encodeBase64Unpadded $ \s -> case B64TLU.decodeBase64Unpadded s of
-    Left _ -> Nothing
-    Right a -> Just a
+_Base64UrlUnpadded = prism' (extractBase64 . B64TLU.encodeBase64Unpadded) $ \s ->
+    case B64TLU.decodeBase64UnpaddedUntyped s of
+        Left _ -> Nothing
+        Right a -> Just a
 {-# INLINE _Base64UrlUnpadded #-}
 
 -- | An 'Iso'' into the Base64 encoding of a 'Text' value
@@ -110,7 +108,7 @@ _Base64UrlUnpadded = prism' B64TLU.encodeBase64Unpadded $ \s -> case B64TLU.deco
 -- "Sun"
 --
 _Base64Lenient :: Iso' Text Text
-_Base64Lenient = iso B64TL.decodeBase64Lenient B64TL.encodeBase64
+_Base64Lenient = iso B64TL.decodeBase64Lenient (extractBase64 . B64TL.encodeBase64)
 
 -- | An 'Iso'' into the Base64url encoding of a 'Text' value
 -- using lenient decoding.
@@ -125,24 +123,24 @@ _Base64Lenient = iso B64TL.decodeBase64Lenient B64TL.encodeBase64
 -- "<<??>>"
 --
 _Base64UrlLenient :: Iso' Text Text
-_Base64UrlLenient = iso B64TLU.decodeBase64Lenient B64TLU.encodeBase64
+_Base64UrlLenient = iso B64TLU.decodeBase64Lenient (extractBase64 . B64TLU.encodeBase64)
 
 -- -------------------------------------------------------------------------- --
 -- Patterns
 
--- | Unidirectional pattern synonym for base64-encoded 'Text' values.
+-- | Bidirectional pattern synonym for base64-encoded 'Text' values.
 --
 pattern Base64 :: Text -> Text
 pattern Base64 a <- (preview _Base64 -> Just a) where
     Base64 a = _Base64 # a
 
--- | Unidirectional pattern synonym for base64url-encoded 'Text' values.
+-- | Bidirectional pattern synonym for base64url-encoded 'Text' values.
 --
 pattern Base64Url :: Text -> Text
 pattern Base64Url a <- (preview _Base64Url -> Just a) where
     Base64Url a = _Base64Url # a
 
--- | Unidirectional pattern synonym for unpadded base64url-encoded 'Text' values.
+-- | Bidirectional pattern synonym for unpadded base64url-encoded 'Text' values.
 --
 pattern Base64UrlUnpadded :: Text -> Text
 pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
@@ -151,13 +149,13 @@ pattern Base64UrlUnpadded a <- (preview _Base64UrlUnpadded -> Just a) where
 -- | Bidirectional pattern synonym for leniently Base64-encoded 'Text' values
 --
 pattern Base64Lenient :: Text -> Text
-pattern Base64Lenient a <- (view (from _Base64Lenient) -> a) where
-    Base64Lenient a = view _Base64Lenient a
+pattern Base64Lenient a <- (view _Base64Lenient -> a) where
+    Base64Lenient a = _Base64Lenient # a
 {-# COMPLETE Base64Lenient #-}
 
 -- | Bidirectional pattern synonym for leniently Base64-encoded 'Text' values
 --
 pattern Base64UrlLenient :: Text -> Text
-pattern Base64UrlLenient a <- (view (from _Base64UrlLenient) -> a) where
-    Base64UrlLenient a = view _Base64UrlLenient a
+pattern Base64UrlLenient a <- (view _Base64UrlLenient -> a) where
+    Base64UrlLenient a = _Base64UrlLenient # a
 {-# COMPLETE Base64UrlLenient #-}

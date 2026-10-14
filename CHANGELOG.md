@@ -1,6 +1,22 @@
 # Revision history for base64-lens
 
+## 0.4
+
+* Support `base64` 2.0 and GHC 9.6–9.14; update dependency bounds for
+  `bytestring` 0.11–0.12, `text` 2.0–2.2, and `lens` 5.0–5.3.
+* Adapt all six string representations to typed encoders and checked untyped
+  decoders while retaining the public optic and pattern types.
+* Fix `Base64Lenient` and `Base64UrlLenient`: construction now encodes and
+  matching decodes, consistently with their optics and the strict patterns.
+* Use `Trustworthy` for encoding modules because `base64` 2.0's modules are
+  not Safe Haskell modules; the error optics remain `Safe`.
+* Add regression and property tests for all representations, patterns, malformed
+  inputs, binary data, Unicode, and error prisms. Replace the unused doctest stub.
+* Refresh CI to test source distributions across supported compilers and both
+  scalar and SIMD decoding backends.
+
 ## 0.3.1
+
 
 * Add lazy and short text and bytestring optics
 * Add safe/trustworthy pragmas
