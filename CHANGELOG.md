@@ -1,6 +1,6 @@
 # Revision history for base64-lens
 
-## 0.4
+## 0.4 — 2026-10-13
 
 * Support `base64` 2.0 and GHC 9.6–9.14; update dependency bounds for
   `bytestring` 0.11–0.12, `text` 2.0–2.2, and `lens` 5.0–5.3.
@@ -26,6 +26,26 @@
   Replace the unused doctest stub.
 * Refresh CI to test source distributions across supported compilers and both
   scalar and SIMD decoding backends.
+
+### Migration from 0.3
+
+For typed decoding, validate external standard-alphabet input with
+`parseBase64`, then use `view` or `(^.)` with the corresponding typed optic.
+Use `extractBase64` or `Data.Base64.Types.Lens._Base64` when an API needs the
+encoded payload without its wrapper.
+
+To keep using `preview` or `(^?)` with ordinary encoded strings, rename the
+prisms:
+
+| Previous name | Replacement |
+| --- | --- |
+| `_Base64` | `_Base64Untyped` |
+| `_Base64Url` | `_Base64UrlUntyped` |
+| `_Base64UrlUnpadded` | `_Base64UrlUnpaddedUntyped` |
+
+The generic URL prism accepts both padded and unpadded input and reviews to
+padded output. The unpadded URL prism rejects padding. Text decoding continues
+to require UTF-8 payloads; use the ByteString optics for arbitrary binary data.
 
 ## 0.3.1
 
