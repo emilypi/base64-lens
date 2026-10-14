@@ -1,6 +1,146 @@
 # Base64-lens
 
-[![Build Status](https://travis-ci.com/emilypi/base64-lens.svg?branch=master)](https://travis-ci.com/emilypi/base64-lens)
+[![Build Status](https://github.com/emilypi/base64-lens/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/emilypi/base64-lens/actions/workflows/haskell-ci.yml)
 [![Hackage](https://img.shields.io/hackage/v/base64-lens.svg)](https://hackage.haskell.org/package/base64-lens)
 
-This package provides optics and convenient pattern synonyms for the [base64](https://hackage.haskell.org/package/base64) library.
+Optics and bidirectional patterns for
+[base64](https://hackage.haskell.org/package/base64), covering strict, lazy, and
+short `ByteString` and `Text` values. Version 0.4 supports `base64` 2.0,
+`lens` 5.0–5.3, and GHC 9.6–9.14.
+
+## Encoding and decoding
+
+The string modules expose typed isomorphisms. Viewing decodes a `Base64` value;
+reviewing encodes the payload and returns a wrapper with the matching alphabet.
+
+```haskell
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+import Control.Lens
+import Data.Base64.Types (Alphabet(..), Base64)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Base64 as Base64
+import qualified Data.ByteString.Base64.Lens as B64
+
+encoded :: Base64 'StdPadded ByteString
+encoded = B64._Base64 # "Sun"
+
+-- "Sun"
+decoded = encoded ^. B64._Base64
+
+-- Right "Sun": validate external input before using the typed optic.
+checked = fmap (view B64._Base64) (Base64.parseBase64 "U3Vu")
+```
+
+Each string module provides these optics, where `a` is its string type:
+
+| Optic | Type |
+| --- | --- |
+| `_Base64` | `Iso' (Base64 'StdPadded a) a` |
+| `_Base64Url` | `Iso' (Base64 'UrlPadded a) a` |
+| `_Base64UrlUnpadded` | `Iso' (Base64 'UrlUnpadded a) a` |
+| `_Base64Lenient` | `Iso' (Base64 'NonStandard a) a` |
+| `_Base64UrlLenient` | `Iso' (Base64 'NonStandard a) a` |
+
+The corresponding patterns construct encoded wrappers and match decoded
+payloads. For example, `B64.Base64 "Sun"` has type
+`Base64 'StdPadded ByteString`, and matching `B64.Base64 bytes` binds the
+decoded bytes. Each pattern is complete for its input type.
+
+The lenient optics ignore invalid Base64 characters, stop at padding, and
+construct canonical padded output tagged as `NonStandard`. They are not lawful
+isomorphisms for arbitrary input.
+
+The `Text` optics expect the decoded payload to be UTF-8, as in the underlying
+library. Invalid UTF-8 may throw an exception. Use the `ByteString` optics for
+arbitrary binary payloads.
+
+## Untyped decoding prisms
+
+For ordinary encoded strings, each string module also provides:
+
+| Prism | Checked decoder | Review produces |
+| --- | --- | --- |
+| `_Base64Untyped` | `decodeBase64Untyped` | Standard, padded Base64 |
+| `_Base64UrlUntyped` | URL `decodeBase64Untyped` | URL-safe, padded Base64 |
+| `_Base64UrlUnpaddedUntyped` | URL `decodeBase64UnpaddedUntyped` | URL-safe, unpadded Base64 |
+
+Each has type `Prism' a a`, where `a` is the module's string type. Preview
+returns the decoded payload on success and `Nothing` on a Base64 decoding
+error; review encodes directly to an ordinary string.
+
+```haskell
+-- Just "Sun"
+untypedDecoded = "U3Vu" ^? B64._Base64Untyped
+
+-- Nothing: non-canonical padding bits
+untypedRejected = "U3V=" ^? B64._Base64Untyped
+
+-- "U3Vu"
+untypedEncoded = B64._Base64Untyped # "Sun"
+```
+
+The URL prism accepts both padded and unpadded input, matching its decoder.
+Reviewing a successful match adds any required padding, so it is not a lawful
+prism over all accepted input. The unpadded URL prism rejects padding. The
+`Text` prisms retain the underlying decoders' UTF-8 requirement described above.
+
+## Wrapper and alphabet optics
+
+`Data.Base64.Types.Lens` gives the wrapper its own namespace. Its `_Base64`
+accesses the **encoded** payload and can change its representation while
+preserving the alphabet index:
+
+```haskell
+import qualified Data.Base64.Types.Lens as Wrapped
+import qualified Data.ByteString.Lazy as BL
+
+-- "U3Vu": the encoded payload
+payload = encoded ^. Wrapped._Base64
+
+lazyEncoded :: Base64 'StdPadded BL.ByteString
+lazyEncoded = encoded & Wrapped._Base64 %~ BL.fromStrict
+```
+
+Importing this module also enables the standard `Wrapped` and `Rewrapped`
+instances, so `_Wrapped` and `_Wrapped'` work with `Base64`. Wrapping uses
+`assertBase64`: it does not encode or validate. Payload changes must preserve
+the claimed encoding if the result will be decoded. These optics keep the
+alphabet index fixed; they do not silently change standard Base64 into URL-safe
+Base64.
+
+The same module supplies `_StdPadded`, `_UrlPadded`, `_UrlUnpadded`, and
+`_NonStandard`, each a `Prism' Alphabet ()`.
+
+`Data.Text.Encoding.Base64.Error.Lens` provides `_DecodeError` and a
+type-changing `_ConversionError` prism for mapping conversion failures.
+
+## Migrating from 0.3
+
+The existing optic names now operate on `Base64` wrappers. Use `view` or `(^.)`
+for typed decoding. Use `parseBase64` to validate external standard-alphabet
+input, then decode the returned wrapper. Extract encoded output with
+`Wrapped._Base64` or `extractBase64` when an API expects an ordinary string.
+
+To retain raw-string prism usage, switch `_Base64` to `_Base64Untyped`,
+`_Base64Url` to `_Base64UrlUntyped`, and `_Base64UrlUnpadded` to
+`_Base64UrlUnpaddedUntyped`. These support `preview` or `(^?)` as before.
+
+The lenient patterns also change direction: construction encodes and matching
+decodes, consistently with the other patterns.
+
+## Development
+
+```sh
+cabal update
+cabal test --test-show-details=direct
+cabal haddock
+cabal check
+```
+
+To exercise the optional SIMD backend in `base64`:
+
+```sh
+cabal test --constraint='base64 +simd' --test-show-details=direct
+```

@@ -4,15 +4,18 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, base64, bytestring, lens, lib, text
-      , text-short
+  f = { mkDerivation, base, base64, bytestring, lens, lib, tasty
+      , tasty-hunit, tasty-quickcheck, text, text-short
       }:
       mkDerivation {
         pname = "base64-lens";
-        version = "0.3.1";
+        version = "0.4";
         src = ./.;
         libraryHaskellDepends = [
           base base64 bytestring lens text text-short
+        ];
+        testHaskellDepends = [
+          base base64 bytestring lens tasty tasty-hunit tasty-quickcheck text text-short
         ];
         homepage = "https://github.com/emilypi/base64-lens";
         description = "Optics for the Base64 library";
